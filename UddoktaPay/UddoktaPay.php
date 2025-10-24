@@ -216,13 +216,26 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
 
         if ($err) {
             throw new Payment_Exception("cURL Error #:" . $err);
+        } 
+
+        if ($response === false) {
+            throw new Payment_Exception('Empty response from API');
+        }
+        
+        $result = json_decode($response, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new Payment_Exception('Invalid JSON response: ' . json_last_error_msg());
+        }
+
+        if ($httpCode >= 400) {
+            $message = $decodedResponse['message'] ?? "HTTP Error: $httpCode";
+            throw new Payment_Exception($message);
+        }
+        
+        if (isset($result['status']) && isset($result['payment_url'])) {
+            return $result['payment_url'];
         } else {
-            $result = json_decode($response, true);
-            if (isset($result['status']) && isset($result['payment_url'])) {
-                return $result['payment_url'];
-            } else {
-                throw new Payment_Exception($result['message']);
-            }
+            throw new Payment_Exception($result['message'] ?? 'Invalid response from API');
         }
         throw new Payment_Exception("Please recheck configurations");
     }
