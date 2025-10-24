@@ -3,7 +3,7 @@
 /**
  * UuddoktaPay FOSSBilling Gateway Module
  *
- * Copyright (c) 2024 UuddoktaPay
+ * Copyright (c) 2025 UuddoktaPay
  * Website: https://uddoktapay.com
  * Email: info@uddoktapay.com
  * Developer: UddoktaPay Team
