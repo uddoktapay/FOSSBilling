@@ -17,6 +17,8 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
 
     protected ?\Pimple\Container $di;
 
+    private string $apiBaseURL;
+
     public function setDi(\Pimple\Container $di): void
     {
         $this->di = $di;
@@ -42,6 +44,8 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
         if (!isset($this->config['exchange_rate'])) {
             throw new Payment_Exception('The ":pay_gateway" payment gateway is not fully configured. Please configure the :missing', [':pay_gateway' => 'UddoktaPay', ':missing' => 'USD to BDT exchange rate [1 USD = ? BDT]']);
         }
+
+        $this->apiBaseURL = $this->normalizeBaseURL($this->config['api_url']);
     }
 
     public static function getConfig()
@@ -192,8 +196,7 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
      */
     private function upInitPayment($requestData)
     {
-        $host = parse_url($this->config['api_url'],  PHP_URL_HOST);
-        $apiUrl = "https://{$host}/api/checkout-v2";
+        $apiUrl = $this->buildURL('checkout-v2');
 
         $curl = curl_init();
 
@@ -253,8 +256,7 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
 
         $invoice_id = $raw_data['invoice_id'];
 
-        $host = parse_url($this->config['api_url'],  PHP_URL_HOST);
-        $verifyUrl = "https://{$host}/api/verify-payment";
+        $verifyUrl = $this->buildURL('verify-payment');
 
         $invoice_data = [
             'invoice_id'    => $invoice_id
@@ -341,5 +343,26 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
             return $amount;
         }
         return $amount / $this->config['exchange_rate'];
+    }
+
+    private function normalizeBaseURL(string $apiBaseURL): string
+    {
+        if (empty($apiBaseURL)) {
+            throw new Exception('API Base URL cannot be empty');
+        }
+
+        $baseURL = rtrim($apiBaseURL, '/');
+        $apiSegmentPosition = strpos($baseURL, '/api');
+        
+        if ($apiSegmentPosition !== false) {
+            $baseURL = substr($baseURL, 0, $apiSegmentPosition + 4);
+        }
+
+        return $baseURL;
+    }
+
+    private function buildURL(string $endpoint): string
+    {
+        return $this->apiBaseURL . '/' . ltrim($endpoint, '/');
     }
 }
