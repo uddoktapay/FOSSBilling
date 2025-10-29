@@ -7,9 +7,7 @@
  * Website: https://uddoktapay.com
  * Email: info@uddoktapay.com
  * Developer: UddoktaPay Team
- * 
  */
-
 
 class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOSSBilling\InjectionAwareInterface
 {
@@ -19,7 +17,7 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
 
     private string $apiBaseURL;
 
-    public function setDi(\Pimple\Container $di): void
+    public function setDi(\Pimple\Container $di) : void
     {
         $this->di = $di;
     }
@@ -33,15 +31,15 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
     {
         $this->config = $config;
 
-        if (!isset($this->config['api_key'])) {
+        if (! isset($this->config['api_key'])) {
             throw new Payment_Exception('The ":pay_gateway" payment gateway is not fully configured. Please configure the :missing', [':pay_gateway' => 'UddoktaPay', ':missing' => 'API KEY']);
         }
 
-        if (!isset($this->config['api_url'])) {
+        if (! isset($this->config['api_url'])) {
             throw new Payment_Exception('The ":pay_gateway" payment gateway is not fully configured. Please configure the :missing', [':pay_gateway' => 'UddoktaPay', ':missing' => 'API URL']);
         }
 
-        if (!isset($this->config['exchange_rate'])) {
+        if (! isset($this->config['exchange_rate'])) {
             throw new Payment_Exception('The ":pay_gateway" payment gateway is not fully configured. Please configure the :missing', [':pay_gateway' => 'UddoktaPay', ':missing' => 'USD to BDT exchange rate [1 USD = ? BDT]']);
         }
 
@@ -51,20 +49,20 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
     public static function getConfig()
     {
         return [
-            'supports_one_time_payments'   =>  true,
-            'description'     =>  'Simplify Your Payment Management with UddoktaPay',
-            'logo' => [
-                'logo' => 'UddoktaPay/UddoktaPay.png',
+            'supports_one_time_payments' => true,
+            'description'                => 'Simplify Your Payment Management with UddoktaPay',
+            'logo'                       => [
+                'logo'   => 'UddoktaPay/UddoktaPay.png',
                 'height' => '50px',
-                'width' => '50px',
+                'width'  => '50px',
             ],
-            'form'  => [
-                'api_key' => [
+            'form'                       => [
+                'api_key'       => [
                     'text', [
                         'label' => 'API key:',
                     ],
                 ],
-                'api_url' => [
+                'api_url'       => [
                     'text', [
                         'label' => 'API URL (V2):',
                     ],
@@ -73,7 +71,7 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
                     'text', [
                         'label' => 'USD to BDT exchange rate [1 USD = ? BDT]:',
                     ],
-                ]
+                ],
             ],
         ];
     }
@@ -91,39 +89,39 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
 
     public function processTransaction($api_admin, $id, $data, $gateway_id)
     {
-        if (!$this->upIsIpnValid($data)) {
+        if (! $this->upIsIpnValid($data)) {
             throw new Payment_Exception('Invalid Request');
         }
 
         $response = $this->upVerifyPayment($data);
 
         if (isset($response['status']) && $response['status'] == 'COMPLETED') {
-            $invoice = $this->di['db']->getExistingModelById('Invoice', $response['metadata']['invoice_id'], 'Invoice not found');
+            $invoice     = $this->di['db']->getExistingModelById('Invoice', $response['metadata']['invoice_id'], 'Invoice not found');
             $transaction = $this->di['db']->getExistingModelById('Transaction', $id, 'Transaction not found');
-            $amount = $this->upCurrencyConvertForTransaction($response['amount'], $response['metadata']['currency']);
+            $amount      = $this->upCurrencyConvertForTransaction($response['amount'], $response['metadata']['currency']);
 
             $tx_data = [
-                'id'            =>  $id,
-                'invoice_id'    =>  $invoice->id,
-                'txn_status'    =>  $response['status'],
-                'txn_id'        =>  $response['transaction_id'],
-                'amount'        =>  $amount,
-                'currency'      =>  $invoice->currency,
-                'type'          =>  $response['payment_method'],
-                'status'        =>  'complete',
+                'id'         => $id,
+                'invoice_id' => $invoice->id,
+                'txn_status' => $response['status'],
+                'txn_id'     => $response['transaction_id'],
+                'amount'     => $amount,
+                'currency'   => $invoice->currency,
+                'type'       => $response['payment_method'],
+                'status'     => 'complete',
             ];
 
             $transactionService = $this->di['mod_service']('Invoice', 'Transaction');
             $transactionService->update($transaction, $tx_data);
 
             $bd = [
-                'amount'        =>  $amount,
-                'description'   =>  $response['payment_method'] . ' Transaction ID: ' . $response['transaction_id'],
-                'type'          =>  'transaction',
-                'rel_id'        =>  $transaction->id,
+                'amount'      => $amount,
+                'description' => $response['payment_method'] . ' Transaction ID: ' . $response['transaction_id'],
+                'type'        => 'transaction',
+                'rel_id'      => $transaction->id,
             ];
 
-            $client = $this->di['db']->getExistingModelById('Client', $invoice->client_id, 'Client not found');
+            $client        = $this->di['db']->getExistingModelById('Client', $invoice->client_id, 'Client not found');
             $clientService = $this->di['mod_service']('client');
 
             if ($this->upIsIpnDuplicate($response)) {
@@ -149,22 +147,22 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
     public function upGetPaymentFields($invoice)
     {
         $first_name = isset($invoice['client']['first_name']) ? $invoice['client']['first_name'] : "John";
-        $last_name = isset($invoice['client']['last_name']) ? $invoice['client']['last_name'] : "";
-        $email = isset($invoice['client']['email']) ? $invoice['client']['email'] : "test@test.com";
+        $last_name  = isset($invoice['client']['last_name']) ? $invoice['client']['last_name'] : "";
+        $email      = isset($invoice['client']['email']) ? $invoice['client']['email'] : "test@test.com";
 
         $fields = [
-            'full_name'     => $first_name . ' ' . $last_name,
-            'email'         => $email,
-            'amount'        => $this->upCurrencyConvert($invoice['subtotal'], $invoice['currency']),
-            'metadata'      => [
-                'invoice_id'    => $invoice['id'],
-                'currency'      => $invoice['currency'],
-                'return_url'    => $this->config['return_url']
+            'full_name'    => $first_name . ' ' . $last_name,
+            'email'        => $email,
+            'amount'       => $this->upCurrencyConvert($invoice['subtotal'], $invoice['currency']),
+            'metadata'     => [
+                'invoice_id' => $invoice['id'],
+                'currency'   => $invoice['currency'],
+                'return_url' => $this->config['return_url'],
             ],
-            'redirect_url'  =>   $this->config['notify_url'],
-            'return_type'   => 'GET',
-            'cancel_url'    => $this->config['cancel_url'],
-            'webhook_url'   => $this->config['notify_url']
+            'redirect_url' => str_replace('invoice_id', 'bb_invoice_id', $this->config['notify_url']),
+            'return_type'  => 'GET',
+            'cancel_url'   => $this->config['cancel_url'],
+            'webhook_url'  => str_replace('invoice_id', 'bb_invoice_id', $this->config['notify_url']),
         ];
 
         return $fields;
@@ -177,10 +175,10 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
      */
     private function upGenerateForm($url, $method = 'get')
     {
-        $form  = '';
+        $form = '';
         $form .= '<form name="payment_form" action="' . $url . '" method="' . $method . '">' . PHP_EOL;
-        $form .=  '<input class="bb-button bb-button-submit" type="submit" value="Pay Now" id="payment_button"/>' . PHP_EOL;
-        $form .=  '</form>' . PHP_EOL . PHP_EOL;
+        $form .= '<input class="bb-button bb-button-submit" type="submit" value="Pay Now" id="payment_button"/>' . PHP_EOL;
+        $form .= '</form>' . PHP_EOL . PHP_EOL;
 
         if (isset($this->config['auto_redirect']) && $this->config['auto_redirect']) {
             $form .= sprintf('<h2>%s</h2>', __trans('Redirecting to Payment Page...'));
@@ -201,30 +199,31 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => $apiUrl,
+            CURLOPT_URL            => $apiUrl,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => json_encode($requestData),
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_CUSTOMREQUEST  => "POST",
+            CURLOPT_POSTFIELDS     => json_encode($requestData),
+            CURLOPT_HTTPHEADER     => [
                 "RT-UDDOKTAPAY-API-KEY: " . $this->config['api_key'],
                 "accept: application/json",
-                "content-type: application/json"
+                "content-type: application/json",
             ],
         ]);
 
         $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error    = curl_error($curl);
         curl_close($curl);
 
-        if ($err) {
-            throw new Payment_Exception("cURL Error #:" . $err);
-        } 
+        if ($error) {
+            throw new Payment_Exception("cURL Error #:" . $error);
+        }
 
         if ($response === false) {
             throw new Payment_Exception('Empty response from API');
         }
-        
+
         $result = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new Payment_Exception('Invalid JSON response: ' . json_last_error_msg());
@@ -234,7 +233,7 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
             $message = $decodedResponse['message'] ?? "HTTP Error: $httpCode";
             throw new Payment_Exception($message);
         }
-        
+
         if (isset($result['status']) && isset($result['payment_url'])) {
             return $result['payment_url'];
         } else {
@@ -259,36 +258,35 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
         $verifyUrl = $this->buildURL('verify-payment');
 
         $invoice_data = [
-            'invoice_id'    => $invoice_id
+            'invoice_id' => $invoice_id,
         ];
 
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => $verifyUrl,
+            CURLOPT_URL            => $verifyUrl,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_CUSTOMREQUEST => "POST",
-            CURLOPT_POSTFIELDS => json_encode($invoice_data),
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_CUSTOMREQUEST  => "POST",
+            CURLOPT_POSTFIELDS     => json_encode($invoice_data),
+            CURLOPT_HTTPHEADER     => [
                 "RT-UDDOKTAPAY-API-KEY: " . $this->config['api_key'],
                 "accept: application/json",
-                "content-type: application/json"
+                "content-type: application/json",
             ],
         ]);
 
         $response = curl_exec($curl);
-        $err = curl_error($curl);
+        $error    = curl_error($curl);
         curl_close($curl);
 
-        if ($err) {
-            throw new Payment_Exception("cURL Error #:" . $err);
+        if ($error) {
+            throw new Payment_Exception("cURL Error #:" . $error);
         } else {
             return json_decode($response, true);
         }
         throw new Payment_Exception("Please recheck configurations");
     }
-
 
     public function upDoRredirect($url)
     {
@@ -313,9 +311,9 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
                 LIMIT 2';
 
         $bindings = [
-            ':transaction_id' => $response['transaction_id'],
+            ':transaction_id'     => $response['transaction_id'],
             ':transaction_status' => $response['status'],
-            ':transaction_type' => $response['payment_method'],
+            ':transaction_type'   => $response['payment_method'],
             ':transaction_amount' => $response['amount'],
         ];
 
@@ -323,7 +321,6 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
         if (count($rows) > 1) {
             return true;
         }
-
 
         return false;
     }
@@ -345,15 +342,15 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
         return $amount / $this->config['exchange_rate'];
     }
 
-    private function normalizeBaseURL(string $apiBaseURL): string
+    private function normalizeBaseURL(string $apiBaseURL) : string
     {
         if (empty($apiBaseURL)) {
             throw new Exception('API Base URL cannot be empty');
         }
 
-        $baseURL = rtrim($apiBaseURL, '/');
+        $baseURL            = rtrim($apiBaseURL, '/');
         $apiSegmentPosition = strpos($baseURL, '/api');
-        
+
         if ($apiSegmentPosition !== false) {
             $baseURL = substr($baseURL, 0, $apiSegmentPosition + 4);
         }

@@ -26,28 +26,28 @@ $_GET['bb_invoice_id'] = $invoiceID;
 $_GET['bb_gateway_id'] = $gatewayID;
 
 $ipn = [
-    'skip_validation' => true,
-    'invoice_id' => $invoiceID,
-    'gateway_id' => $gatewayID,
-    'get' => $_GET,
-    'post' => $_POST,
-    'server' => $_SERVER,
+    'skip_validation'    => true,
+    'invoice_id'         => $invoiceID,
+    'gateway_id'         => $gatewayID,
+    'get'                => $_GET,
+    'post'               => $_POST,
+    'server'             => $_SERVER,
     'http_raw_post_data' => $filesystem->readFile('php://input'),
 ];
 
 try {
     $service = $di['mod_service']('invoice', 'transaction');
-    $output = $service->createAndProcess($ipn);
-    $res = ['result' => $output, 'error' => null];
+    $output  = $service->createAndProcess($ipn);
+    $res     = ['result' => $output, 'error' => null];
 } catch (Exception $e) {
-    $res = ['result' => null, 'error' => ['message' => $e->getMessage()]];
+    $res    = ['result' => null, 'error' => ['message' => $e->getMessage()]];
     $output = false;
 }
 
 // redirect to invoice if gateways requires
 if (isset($_GET['redirect'], $_GET['invoice_hash']) || isset($_GET['bb_redirect'], $_GET['bb_invoice_hash'])) {
     $hash = $_GET['invoice_hash'] ?? $_GET['bb_invoice_hash'];
-    $url = $di['url']->link('invoice/' . $hash);
+    $url  = $di['url']->link('invoice/' . $hash);
     header("Location: $url");
     exit;
 }
