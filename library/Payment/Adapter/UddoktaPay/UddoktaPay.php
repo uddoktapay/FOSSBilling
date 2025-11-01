@@ -133,11 +133,9 @@ class Payment_Adapter_UddoktaPay extends Payment_AdapterAbstract implements \FOS
             $invoiceService = $this->di['mod_service']('Invoice');
             $invoiceService->payInvoiceWithCredits($invoice);
             $invoiceService->doBatchPayWithCredits(['client_id' => $invoice->client_id]);
-
-            $this->upDoRredirect($response['metadata']['return_url']);
-        } else {
-            throw new Payment_Exception('Invalid Request');
         }
+
+        $this->upDoRredirect($response['metadata']['return_url']);
     }
 
     /**
